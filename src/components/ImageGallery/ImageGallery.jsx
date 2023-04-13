@@ -14,6 +14,7 @@ state={
   pageCounter:1,
   loading: false,
   modalContent: null,
+  modalState:false,
 }
 
 addPage = () => {
@@ -33,43 +34,34 @@ pushItemsArray=(arr)=>{
 
 displayModal = ({ link, desc }) => {
 
-  this.setState({ modalContent: { link, desc } });
+  this.setState({ modalContent: { link, desc }, modalState:true });
 
 }
 
 closeModal = () => {
-  // Clear the modal content from state
-  this.setState({ modalContent: null });
-}
-componentDidMount() {
-  window.addEventListener('keydown', this.handleKeyDown);
+  this.setState({ modalContent: null, modalState:false });
 }
 
-componentWillUnmount() {
-  window.removeEventListener('keydown', this.handleKeyDown);
-}
 
-handleKeyDown = (event) => {
-  if (event.key === 'Escape') {
-    this.closeModal();
-  }
-};
+handleSearch = (searchWord,page)=>{
+  this.setState({ loading: true }); 
+  api(searchWord, page)
+    .then((arr) => {
+      this.pushItemsArray(arr);
+      this.setState({ loading: false });
+    })
+    .catch(() => {
+      this.setState({ loading: false });
+    });
+}
 
 componentDidUpdate(prevProps, prevState){
   if(prevProps.searchWord !== this.props.searchWord){
     this.setState({ itemsArray: [], pageCounter: 1 });
-    
+    this.handleSearch(this.props.searchWord,1)
   }
-  if(prevProps.searchWord !== this.props.searchWord || prevState.pageCounter !== this.state.pageCounter){
-    this.setState({ loading: true }); 
-    api(this.props.searchWord, this.state.pageCounter)
-      .then((arr) => {
-        this.pushItemsArray(arr);
-        this.setState({ loading: false });
-      })
-      .catch(() => {
-        this.setState({ loading: false });
-      });
+  if(prevState.pageCounter !== this.state.pageCounter && this.state.pageCounter>1){
+    this.handleSearch(this.props.searchWord,this.state.pageCounter)
   }
   console.log('state page:', this.state.pageCounter)
 }
@@ -90,7 +82,8 @@ componentDidUpdate(prevProps, prevState){
         <Modal
           link={this.state.modalContent.link}
           alt={this.state.modalContent.desc}
-          closeModal={this.closeModal} 
+          modalState={this.state.modalState} 
+          closeModal={this.closeModal}
         />
       )}
       </>
